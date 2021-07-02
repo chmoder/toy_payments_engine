@@ -95,7 +95,7 @@ fn write_account_summary(accounts: &AccountsType) {
 /// 1,1.5,0.0,1.5,false
 /// ```
 /// ```shell
-/// usage: cargo run --transactions.csv > accounts.csv
+/// usage: cargo run -- transactions.csv > accounts.csv
 /// ```
 pub async fn main() {
     let opt = Cli::from_args();
