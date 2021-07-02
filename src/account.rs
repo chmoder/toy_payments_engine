@@ -207,3 +207,179 @@ impl Account {
         }
     }
 }
+
+#[cfg(test)]
+mod test {
+    use rust_decimal::Decimal;
+    use std::str::FromStr;
+    use super::Account; 
+    use super::Transaction;  
+
+    #[test]
+    fn test_new() {
+        assert_eq!(Account::new(1).id, 1);
+    }
+
+    #[test]
+    fn test_add_transaction() {
+        let mut account = Account::new(1);
+        let t1 = Transaction::new(1);
+        account.add_transaction(t1);
+        assert_eq!(account.transactions.len(), 1);
+    }
+
+    #[test]
+    fn test_get_transaction_by_id() {
+        let mut account = Account::new(1);
+        let t1 = Transaction::new(1);
+        let t2 = Transaction::new(2);
+        account.add_transaction(t1);
+        account.add_transaction(t2);
+        let t3 = account.get_transaction_by_id(2).unwrap();
+        assert_eq!(t3.id, 2);
+    }
+
+    #[test]
+    fn test_round() {
+        let mut account = Account::new(1);
+        account.total += Decimal::from_str("0.123456789").unwrap();
+        account.round();
+        assert_eq!(account.total.to_string(), "0.1235");
+    }
+
+    #[test]
+    fn test_deposit() {
+        let mut account = Account::new(1);
+        let mut t1 = Transaction::new(1);
+        t1.type_ = String::from("deposit");
+        t1.client_id = 1;
+        t1.amount = Decimal::from_str("1.25").unwrap();
+        account.add_transaction(t1);
+        account.process_transactions();
+        assert_eq!(account.available.to_string(), "1.25");
+        assert_eq!(account.total.to_string(), "1.25");
+    }
+
+    #[test]
+    fn test_withdrawal() {
+        let mut account = Account::new(1);
+
+        let mut t1 = Transaction::new(1);
+        t1.type_ = String::from("deposit");
+        t1.client_id = 1;
+        t1.amount = Decimal::from_str("2.00").unwrap();
+        account.add_transaction(t1);
+
+        let mut t2 = Transaction::new(2);
+        t2.type_ = String::from("withdrawal");
+        t2.client_id = 1;
+        t2.amount = Decimal::from_str("1.00").unwrap();
+        account.add_transaction(t2);
+        
+        account.process_transactions();
+        assert_eq!(account.available.to_string(), "1.00");
+        assert_eq!(account.total.to_string(), "1.00");
+    }
+
+    #[test]
+    fn test_dispute() {
+        let mut account = Account::new(1);
+
+        let mut t1 = Transaction::new(1);
+        t1.type_ = String::from("deposit");
+        t1.client_id = 1;
+        t1.amount = Decimal::from_str("3.00").unwrap();
+        account.add_transaction(t1);
+
+        let mut t2 = Transaction::new(2);
+        t2.type_ = String::from("deposit");
+        t2.client_id = 1;
+        t2.amount = Decimal::from_str("2.00").unwrap();
+        account.add_transaction(t2);
+
+        let mut t3 = Transaction::new(1);
+        t3.type_ = String::from("dispute");
+        t3.client_id = 1;
+        t3.amount = Decimal::from_str("1.00").unwrap();
+        account.add_transaction(t3);
+        
+        account.process_transactions();
+
+        assert_eq!(account.available.to_string(), "2.00");
+        assert_eq!(account.held.to_string(), "3.00");
+        assert_eq!(account.total.to_string(), "5.00");
+    }
+    
+    #[test]
+    fn test_resolve() {
+        let mut account = Account::new(1);
+
+        let mut t1 = Transaction::new(1);
+        t1.type_ = String::from("deposit");
+        t1.client_id = 1;
+        t1.amount = Decimal::from_str("3.00").unwrap();
+        account.add_transaction(t1);
+
+        let mut t2 = Transaction::new(2);
+        t2.type_ = String::from("deposit");
+        t2.client_id = 1;
+        t2.amount = Decimal::from_str("2.00").unwrap();
+        account.add_transaction(t2);
+
+        let mut t3 = Transaction::new(1);
+        t3.type_ = String::from("dispute");
+        t3.client_id = 1;
+        t3.amount = Decimal::from_str("0.00").unwrap();
+        account.add_transaction(t3);
+
+        let mut t4 = Transaction::new(1);
+        t4.type_ = String::from("resolve");
+        t4.client_id = 1;
+        t4.amount = Decimal::from_str("0.00").unwrap();
+        account.add_transaction(t4);
+        
+        account.process_transactions();
+
+        assert_eq!(account.available.to_string(), "5.00");
+        assert_eq!(account.held.to_string(), "0.0000");
+        assert_eq!(account.total.to_string(), "5.00");
+    }
+
+    #[test]
+    fn test_chargeback() {
+        let mut account = Account::new(1);
+
+        let mut t1 = Transaction::new(1);
+        t1.type_ = String::from("deposit");
+        t1.client_id = 1;
+        t1.amount = Decimal::from_str("3.00").unwrap();
+        account.add_transaction(t1);
+
+        let mut t2 = Transaction::new(2);
+        t2.type_ = String::from("deposit");
+        t2.client_id = 1;
+        t2.amount = Decimal::from_str("2.00").unwrap();
+        account.add_transaction(t2);
+
+        let mut t3 = Transaction::new(1);
+        t3.type_ = String::from("dispute");
+        t3.client_id = 1;
+        t3.amount = Decimal::from_str("0.00").unwrap();
+        account.add_transaction(t3);
+
+        let mut t4 = Transaction::new(1);
+        t4.type_ = String::from("chargeback");
+        t4.client_id = 1;
+        t4.amount = Decimal::from_str("0.00").unwrap();
+        account.add_transaction(t4);
+        
+        account.process_transactions();
+
+        println!("{:?}", account);
+
+        assert_eq!(account.available.to_string(), "2.00");
+        assert_eq!(account.held.to_string(), "0.0000");
+        assert_eq!(account.total.to_string(), "2.00");
+        assert_eq!(account.locked, true);
+    }
+}
