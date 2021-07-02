@@ -1,4 +1,4 @@
-# toy_payments_engine
+# Toy Payments Engine
 
 Toy Payment Engine is a simple transaction processor written in Rust 🦀!  
 
