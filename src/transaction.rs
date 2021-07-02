@@ -46,3 +46,13 @@ impl Transaction {
         }
     }
 }
+
+#[cfg(test)]
+mod test {
+    use super::Transaction;
+
+    #[test]
+    fn test_new() {
+        assert_eq!(Transaction::new(1).id, 1);
+    }
+}
