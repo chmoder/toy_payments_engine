@@ -1,0 +1,15 @@
+[package]
+name = "toy_payments_engine"
+version = "0.1.0"
+edition = "2018"
+
+[dependencies]
+rust_decimal = "1.14"
+csv = "1.1"
+structopt = "0.3"
+tokio = { version = "1.7", features = ["full"] }
+
+
+[dependencies.serde]  # Add serde in its own section.
+version = "1.0"
+features = ["derive"] # We'll need the derive feature.
