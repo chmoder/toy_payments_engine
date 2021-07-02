@@ -26,22 +26,22 @@ pub struct Transaction {
 
 impl Transaction {
     /// Create a new account with default values.
-    /// 
+    ///
     /// Arguments:
-    ///     
+    ///     * id - the id for the transaction
     /// return:
     ///     a new Transaction object
-    /// 
+    ///
     /// # example
     /// ```rust
     /// mod transaction;
     /// Transaction::new(1);
     /// ```
-    pub fn new(self) -> Transaction {
+    pub fn new(id: u32) -> Transaction {
         Transaction {
             type_: String::from(""),
             client_id: 0,
-            id: 0,
+            id: id,
             amount: Decimal::new(0, 4),
         }
     }
