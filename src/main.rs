@@ -26,6 +26,7 @@ struct Cli {
 /// ignore those rows and print the error to STDERR.
 fn populate_accounts(path: String, accounts: &mut AccountsType) {
     let mut reader = match csv::ReaderBuilder::new()
+        .flexible(true)
         .trim(csv::Trim::All)
         .from_path(path)
     {

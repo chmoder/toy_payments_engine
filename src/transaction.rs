@@ -1,5 +1,15 @@
 use rust_decimal::Decimal;
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
+
+/// This calls ::Default for types that use the serde
+/// deserialize_with attribute
+fn decimal_default_if_empy<'de, D, T>(de: D) -> Result<T, D::Error>
+where
+    D: serde::Deserializer<'de>,
+    T: serde::Deserialize<'de> + Default,
+{
+    Option::<T>::deserialize(de).map(|x| x.unwrap_or_else(|| T::default()))
+}
 
 /// This struct holds information about a transaction
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -10,6 +20,7 @@ pub struct Transaction {
     pub client_id: u16,
     #[serde(rename = "tx")]
     pub id: u32,
+    #[serde(deserialize_with = "decimal_default_if_empy")]
     pub amount: Decimal,
 }
 
