@@ -119,10 +119,6 @@ impl Account {
         &self.round();
     }
 
-    pub async fn process_transactions_async(&mut self) {
-        self.process_transactions();
-    }
-
     /// Calculates the affect of a deposit on this account
     /// for this transaction.
     ///
