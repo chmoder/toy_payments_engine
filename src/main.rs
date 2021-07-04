@@ -1,3 +1,4 @@
+use crossbeam::thread;
 use crate::account::Account;
 use csv;
 use std::collections::BTreeMap;
@@ -52,13 +53,29 @@ fn populate_accounts(path: String, accounts: &mut AccountsType) {
     }
 }
 
-/// calculates the accounts available, held, total, and locked 
-/// status using the stored `account.transactions`. 
-fn process_transactions(accounts: &mut AccountsType) {
-    for account in accounts {
-        let account = account.1;
-        account.process_transactions();
-    }
+/// processes each accounts transactions concurrently.
+/// 
+/// Exclusive Borrow that is mutable so that we can calculate
+/// the transactions without copying values in memory.
+/// 
+/// See more explanation here:
+/// https://docs.rs/crossbeam/0.8.1/crossbeam/thread/index.html#why-scoped-threads
+async fn process_transactions(accounts: &mut AccountsType) {
+    thread::scope(|s| {
+        let mut handles = Vec::new();
+
+        for account in accounts {
+            let account = account.1;
+            let handle = s.spawn(move |_| {
+                account.process_transactions();
+            });
+            handles.push(handle);
+        }
+        
+        for handle in handles {
+            let _ = handle.join().unwrap();
+        }
+    }).unwrap();
 }
 
 /// Writes the account statuses to STDOUT using 
@@ -78,7 +95,6 @@ fn write_account_summary(accounts: &AccountsType) {
     writer.flush().unwrap();
 }
 
-#[tokio::main]
 /// Toy Payment Engine
 ///
 /// This CLI program processes a list of transactions
@@ -97,12 +113,13 @@ fn write_account_summary(accounts: &AccountsType) {
 /// ```shell
 /// usage: cargo run -- transactions.csv > accounts.csv
 /// ```
+#[tokio::main]
 pub async fn main() {
     let opt = Cli::from_args();
     let filepath = opt.path.as_path().display().to_string();
-    let mut accounts: BTreeMap<u16, Account> = BTreeMap::new();
+    let mut accounts: AccountsType = BTreeMap::new();
 
     populate_accounts(filepath, &mut accounts);
-    process_transactions(&mut accounts);
+    process_transactions(&mut accounts).await;
     write_account_summary(&accounts);
 }

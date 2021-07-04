@@ -11,7 +11,7 @@ where
     Option::<T>::deserialize(de).map(|x| x.unwrap_or_else(|| T::default()))
 }
 
-/// This struct holds information about a transaction
+/// Holds information about a transaction
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Transaction {
     #[serde(rename = "type")]

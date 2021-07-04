@@ -3,7 +3,7 @@ use crate::transaction::Transaction;
 use serde::{Deserialize, Serialize};
 
 
-/// This struct is used to hold the accounts details.
+/// Hold the accounts details.
 /// It is the one that inevitably will represent
 /// each row in the output CSV text.  
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -98,11 +98,26 @@ impl Account {
         self.total = self.total.round_dp(4);
     }
 
+    /// Updates this account instance values with the 
+    /// result of the action of its transasctions.
+    ///
+    /// Arguments:
+    ///     
+    /// return:
+    ///     ()
     pub fn process_transactions(&mut self) {
-        let transactions = &self.transactions.clone();
+        // I am not sure if to_owned will use Clone here.  
+        // If so let's find a more performant solution like:
+        // let transactions_len = self.transactions.len();
+        // 
+        // for i in 0...transactions_len {
+        //     let transaction = self.transactions[i].clone();
+        // }
+        
+        for transaction in self.transactions.to_owned() {
+            let transaction_type = transaction.type_.as_str();
 
-        for transaction in transactions {
-            match transaction.type_.as_str() {
+            match transaction_type {
                 "deposit" => self.deposit(&transaction),
                 "withdrawal" => self.withdrawal(&transaction),
                 "dispute" => self.dispute(&transaction),
@@ -111,16 +126,12 @@ impl Account {
                 _ => {
                     eprintln!(
                         "invalid transaction type handle: {}",
-                        transaction.type_.as_str()
+                        transaction_type
                     );
                 }
             };
         }
-        &self.round();
-    }
-
-    pub async fn process_transactions_async(&mut self) {
-        self.process_transactions();
+        self.round();
     }
 
     /// Calculates the affect of a deposit on this account
